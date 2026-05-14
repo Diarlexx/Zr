@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and roles.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "displayName", "createdAt"]
+    },
+    "Reservation": {
+      "title": "Room Reservation",
+      "description": "Booking details for a hotel room.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "roomName": { "type": "string" },
+        "price": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "roomName", "price", "date", "time", "status", "createdAt"]
+    },
+    "Log": {
+      "title": "Activity Log",
+      "description": "System events and activity logs.",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["action", "details", "userId", "userEmail", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles indexed by UID."
+    },
+    "reservations/{reservationId}": {
+      "schema": "Reservation",
+      "description": "Global reservations list."
+    },
+    "logs/{logId}": {
+      "schema": "Log",
+      "description": "System activity history."
+    }
+  }
+}

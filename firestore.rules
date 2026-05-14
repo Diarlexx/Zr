@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt', 'displayName']) &&
+             data.uid == request.auth.uid &&
+             data.role in ['user', 'admin'] &&
+             (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function isValidReservation(data) {
+      return data.keys().hasAll(['userId', 'userName', 'roomName', 'price', 'date', 'time', 'status', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.status == 'pending' &&
+             data.createdAt == request.time;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'role', 'updatedAt']);
+    }
+
+    // Reservations
+    match /reservations/{reservationId} {
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidReservation(request.resource.data);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Logs (History)
+    match /logs/{logId} {
+      allow list: if isAdmin();
+      allow create: if isSignedIn();
+    }
+  }
+}
